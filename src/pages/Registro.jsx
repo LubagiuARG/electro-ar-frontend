@@ -130,7 +130,8 @@ export default function Registro() {
   const handleSubmit = async (e) => {
   e.preventDefault()
   try {
-    await registrarElectricista({
+    // 1. Registrar el electricista
+    const resultado = await registrarElectricista({
       nombre:         form.nombre,
       apellido:       form.apellido,
       email:          form.email,
@@ -142,6 +143,25 @@ export default function Registro() {
       especialidades: form.especialidades,
       plan:           selectedPlan,
     })
+
+    // 2. Si eligió PRO → redirigir a MercadoPago
+    if (selectedPlan === 'pro') {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/suscripciones/crear`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          electricistaId: resultado.id,
+          email:          form.email,
+          nombre:         `${form.nombre} ${form.apellido}`,
+        }),
+      })
+      const data = await res.json()
+      if (data.init_point) {
+        window.location.href = data.init_point // Redirigir a MP
+        return
+      }
+    }
+
     setSubmitted(true)
   } catch (error) {
     alert(error.message)
