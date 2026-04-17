@@ -163,9 +163,13 @@ export default function Registro() {
     }
 
     setSubmitted(true)
-  } catch (error) {
-    alert(error.message)
+} catch (error) {
+  if (error.message.includes('Ya existe')) {
+    alert('Ya existe un electricista registrado con ese email. Usá otro email.')
+  } else {
+    alert(`Error: ${error.message}`)
   }
+}
 }
  
   if (submitted) {
