@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import styles from './Registro.module.css'
+import { registrarElectricista } from '../services/api'
 
 const PLANS = [
   {
@@ -126,12 +127,27 @@ export default function Registro() {
     }))
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    // En producción: enviar al backend → crear usuario → redirigir a MercadoPago
+  const handleSubmit = async (e) => {
+  e.preventDefault()
+  try {
+    await registrarElectricista({
+      nombre:         form.nombre,
+      apellido:       form.apellido,
+      email:          form.email,
+      telefono:       form.telefono,
+      matricula:      form.matricula,
+      provincia:      form.provincia,
+      zona:           form.zona,
+      descripcion:    form.descripcion,
+      especialidades: form.especialidades,
+      plan:           selectedPlan,
+    })
     setSubmitted(true)
+  } catch (error) {
+    alert(error.message)
   }
-
+}
+ 
   if (submitted) {
     return (
       <div className={styles.successScreen}>

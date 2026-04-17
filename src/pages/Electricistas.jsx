@@ -1,129 +1,20 @@
-import { useState, useMemo } from 'react'
+//import { useState, useMemo } from 'react'
 import styles from './Electricistas.module.css'
+import { useState, useEffect, useMemo } from 'react'
+import { getElectricistas } from '../services/api'
 
-// ── Datos mock — en producción vienen del backend ────────────────────────────
-const ELECTRICISTAS = [
-  {
-    id: 1,
-    nombre: 'Marcelo Rodríguez',
-    iniciales: 'MR',
-    zona: 'Palermo, CABA',
-    region: 'caba',
-    matricula: '4821',
-    rating: 4.9,
-    reviews: 87,
-    tarifa: 18500,
-    especialidades: ['Tableros', 'Instalaciones residenciales', 'BT'],
-    verificado: true,
-    pro: true,
-    whatsapp: '5491100000001',
-  },
-  {
-    id: 2,
-    nombre: 'Laura Fernández',
-    iniciales: 'LF',
-    zona: 'San Isidro, GBA Norte',
-    region: 'gba-norte',
-    matricula: '7203',
-    rating: 4.8,
-    reviews: 54,
-    tarifa: 16000,
-    especialidades: ['Domotica', 'Instalaciones residenciales', 'Alarmas'],
-    verificado: true,
-    pro: false,
-    whatsapp: '5491100000002',
-  },
-  {
-    id: 3,
-    nombre: 'Jorge González',
-    iniciales: 'JG',
-    zona: 'Quilmes, GBA Sur',
-    region: 'gba-sur',
-    matricula: '3390',
-    rating: 4.6,
-    reviews: 41,
-    tarifa: 14500,
-    especialidades: ['Comercial', 'Industrial', 'Tableros'],
-    verificado: true,
-    pro: true,
-    whatsapp: '5491100000003',
-  },
-  {
-    id: 4,
-    nombre: 'Alejandro Pérez',
-    iniciales: 'AP',
-    zona: 'Morón, GBA Oeste',
-    region: 'gba-oeste',
-    matricula: '5617',
-    rating: 4.4,
-    reviews: 29,
-    tarifa: 13000,
-    especialidades: ['Residencial', 'Porteros', 'CCTV'],
-    verificado: false,
-    pro: false,
-    whatsapp: '5491100000004',
-  },
-  {
-    id: 5,
-    nombre: 'Carlos Vidal',
-    iniciales: 'CV',
-    zona: 'Caballito, CABA',
-    region: 'caba',
-    matricula: '9934',
-    rating: 5.0,
-    reviews: 12,
-    tarifa: 20000,
-    especialidades: ['Luces de emergencia', 'Tableros', 'BT'],
-    verificado: true,
-    pro: true,
-    whatsapp: '5491100000005',
-  },
-  {
-    id: 6,
-    nombre: 'Sebastián Molina',
-    iniciales: 'SM',
-    zona: 'Tigre, GBA Norte',
-    region: 'gba-norte',
-    matricula: '9012',
-    rating: 4.3,
-    reviews: 18,
-    tarifa: 12500,
-    especialidades: ['Residencial', 'Instalaciones nuevas'],
-    verificado: false,
-    pro: false,
-    whatsapp: '5491100000006',
-  },
-  {
-    id: 7,
-    nombre: 'Verónica Sánchez',
-    iniciales: 'VS',
-    zona: 'Villa Urquiza, CABA',
-    region: 'caba',
-    matricula: '6145',
-    rating: 4.7,
-    reviews: 33,
-    tarifa: 17000,
-    especialidades: ['Residencial', 'Reciclajes', 'Tableros'],
-    verificado: true,
-    pro: true,
-    whatsapp: '5491100000007',
-  },
-  {
-    id: 8,
-    nombre: 'Rodrigo Blanco',
-    iniciales: 'RB',
-    zona: 'Lanús, GBA Sur',
-    region: 'gba-sur',
-    matricula: '8801',
-    rating: 4.5,
-    reviews: 22,
-    tarifa: 13500,
-    especialidades: ['Industrial', 'Mantenimiento', 'BT'],
-    verificado: true,
-    pro: false,
-    whatsapp: '5491100000008',
-  },
-]
+// Dentro del componente, agregá estos estados:
+const [electricistas, setElectricistas] = useState([])
+const [cargando, setCargando]           = useState(true)
+
+useEffect(() => {
+  getElectricistas()
+    .then(data => {
+      setElectricistas(data)
+      setCargando(false)
+    })
+    .catch(() => setCargando(false))
+}, [])
 
 const REGIONS = [
   { id: 'todos',     label: 'Todos' },
@@ -207,7 +98,7 @@ export default function Electricistas() {
   const [search, setSearch]   = useState('')
 
   const filtered = useMemo(() => {
-    let list = ELECTRICISTAS
+    let list = electricistas
 
     if (region !== 'todos') {
       list = list.filter((e) => e.region === region)
@@ -272,21 +163,26 @@ export default function Electricistas() {
       </div>
 
       {/* Resultados */}
-      {filtered.length === 0 ? (
-        <div className={styles.empty}>
-          <span>🔍</span>
-          <p>No hay electricistas que coincidan con tu búsqueda.</p>
-        </div>
-      ) : (
-        <>
-          <p className={styles.resultCount}>
-            {filtered.length} profesional{filtered.length !== 1 ? 'es' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
-          </p>
-          <div className={styles.grid}>
-            {filtered.map((e) => <ElecCard key={e.id} elec={e} />)}
-          </div>
-        </>
-      )}
+      {cargando ? (
+  <div className={styles.empty}>
+    <span>⚡</span>
+    <p>Cargando electricistas...</p>
+  </div>
+) : filtered.length === 0 ? (
+  <div className={styles.empty}>
+    <span>🔍</span>
+    <p>No hay electricistas que coincidan con tu búsqueda.</p>
+  </div>
+) : (
+  <>
+    <p className={styles.resultCount}>
+      {filtered.length} profesional{filtered.length !== 1 ? 'es' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
+    </p>
+    <div className={styles.grid}>
+      {filtered.map((e) => <ElecCard key={e.id} elec={e} />)}
+    </div>
+  </>
+)}
 
       {/* CTA para electricistas */}
       <div className={styles.ctaBanner}>
