@@ -26,7 +26,7 @@ const PLANS = [
     id: 'pro',
     label: 'Plan Recomendado',
     name: 'PRO',
-    price: 8900,
+    price: 20000,
     period: '/mes',
     featured: true,
     features: [
