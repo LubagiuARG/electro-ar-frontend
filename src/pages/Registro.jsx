@@ -1,11 +1,7 @@
 import { useState } from 'react'
-import styles from './Registro.module.css'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { registrarElectricista } from '../services/api'
-
-const navigate       = useNavigate()
-const { login }      = useAuth()
+import styles from './Registro.module.css'
 
 const PLANS = [
   {
@@ -31,7 +27,7 @@ const PLANS = [
     id: 'pro',
     label: 'Plan Recomendado',
     name: 'PRO',
-    price: 20000,
+    price: 15000,
     period: '/mes',
     featured: true,
     features: [
@@ -69,9 +65,7 @@ function PlanCard({ plan, selected, onSelect }) {
       className={`${styles.planCard} ${plan.featured ? styles.planFeatured : ''} ${selected === plan.id ? styles.planSelected : ''}`}
       onClick={() => onSelect(plan.id)}
     >
-      {plan.featured && (
-        <div className={styles.planBadge}>⚡ Recomendado</div>
-      )}
+      {plan.featured && <div className={styles.planBadge}>⚡ Recomendado</div>}
       <div className={styles.planLabel}>{plan.label}</div>
       <div className={styles.planName}>{plan.name}</div>
       <div className={styles.planPrice}>
@@ -104,21 +98,17 @@ function PlanCard({ plan, selected, onSelect }) {
 }
 
 export default function Registro() {
+  // ✅ hooks DENTRO del componente
+  const navigate          = useNavigate()
+  const { login }         = useAuth()
   const [selectedPlan, setSelectedPlan] = useState('pro')
-  const [step, setStep] = useState(1) // 1: plan, 2: datos, 3: pago
-  const [form, setForm] = useState({
-    nombre: '',
-    apellido: '',
-    email: '',
-    password: '',
-    telefono: '',
-    matricula: '',
-    provincia: '',
-    zona: '',
-    especialidades: [],
-    descripcion: '',
-  })
+  const [step, setStep]   = useState(1)
   const [submitted, setSubmitted] = useState(false)
+  const [form, setForm]   = useState({
+    nombre: '', apellido: '', email: '', password: '',
+    passwordConfirm: '', telefono: '', matricula: '',
+    provincia: '', zona: '', especialidades: [], descripcion: '',
+  })
 
   const handleField = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
@@ -133,60 +123,79 @@ export default function Registro() {
     }))
   }
 
- const handleSubmit = async (e) => {
-  e.preventDefault()
-  try {
-    const API = import.meta.env.VITE_API_URL
+  const handleSubmit = async (e) => {
+    e.preventDefault()
 
-    // 1. Registrar con contraseña
-    const res  = await fetch(`${API}/api/auth/registro`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        nombre:         form.nombre,
-        apellido:       form.apellido,
-        email:          form.email,
-        password:       form.password,
-        telefono:       form.telefono,
-        matricula:      form.matricula,
-        provincia:      form.provincia,
-        zona:           form.zona,
-        descripcion:    form.descripcion,
-        especialidades: form.especialidades,
-        plan:           selectedPlan,
-      }),
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Error al registrar')
-
-    // 2. Guardar sesión
-    login(data.token, data.electricista)
-
-    // 3. Si eligió PRO → MercadoPago
-    if (selectedPlan === 'pro') {
-      const mpRes  = await fetch(`${API}/api/suscripciones/crear`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          electricistaId: data.electricista.id,
-          email:          form.email,
-          nombre:         `${form.nombre} ${form.apellido}`,
-        }),
-      })
-      const mpData = await mpRes.json()
-      if (mpData.init_point) {
-        window.location.href = mpData.init_point
-        return
-      }
+    if (form.password.length < 6) {
+      alert('La contraseña debe tener al menos 6 caracteres')
+      return
+    }
+    if (form.password !== form.passwordConfirm) {
+      alert('Las contraseñas no coinciden')
+      return
     }
 
-    // 4. Redirigir al panel
-    navigate('/panel')
+    try {
+      const API = import.meta.env.VITE_API_URL
 
-  } catch (error) {
-    alert(error.message)
+      const res = await fetch(`${API}/api/auth/registro`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre:         form.nombre,
+          apellido:       form.apellido,
+          email:          form.email,
+          password:       form.password,
+          telefono:       form.telefono,
+          matricula:      form.matricula,
+          provincia:      form.provincia,
+          zona:           form.zona,
+          descripcion:    form.descripcion,
+          especialidades: form.especialidades,
+          plan:           selectedPlan,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al registrar')
+
+      login(data.token, data.electricista)
+
+      if (selectedPlan === 'pro') {
+        const mpRes  = await fetch(`${API}/api/suscripciones/crear`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            electricistaId: data.electricista.id,
+            email:          form.email,
+            nombre:         `${form.nombre} ${form.apellido}`,
+          }),
+        })
+        const mpData = await mpRes.json()
+        if (mpData.init_point) {
+          window.location.href = mpData.init_point
+          return
+        }
+      }
+
+      navigate('/panel')
+
+    } catch (error) {
+      alert(error.message)
+    }
   }
-}
+
+  if (submitted) {
+    return (
+      <div className={styles.successScreen}>
+        <div className={styles.successIcon}>⚡</div>
+        <h2 className={styles.successTitle}>¡Registro completado!</h2>
+        <p className={styles.successDesc}>Tu perfil ya está activo.</p>
+        <button className="btn btn-primary" onClick={() => navigate('/panel')}>
+          Ir a mi panel
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className={styles.page}>
@@ -196,7 +205,7 @@ export default function Registro() {
         <p>Registrate y empezá a recibir consultas de clientes en tu zona</p>
       </div>
 
-      {/* Steps indicator */}
+      {/* Steps */}
       <div className={styles.steps}>
         {['Elegí tu plan', 'Tus datos', 'Pago'].map((label, i) => (
           <div key={i} className={`${styles.step} ${step === i + 1 ? styles.stepActive : ''} ${step > i + 1 ? styles.stepDone : ''}`}>
@@ -212,12 +221,7 @@ export default function Registro() {
         <div className={styles.stepContent}>
           <div className={styles.plansGrid}>
             {PLANS.map((plan) => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                selected={selectedPlan}
-                onSelect={setSelectedPlan}
-              />
+              <PlanCard key={plan.id} plan={plan} selected={selectedPlan} onSelect={setSelectedPlan} />
             ))}
           </div>
           <div className={styles.stepActions}>
@@ -251,12 +255,20 @@ export default function Registro() {
                 <input className="input" type="email" name="email" placeholder="tu@email.com" value={form.email} onChange={handleField} />
               </div>
               <div className={styles.formGroup}>
+                <label className="input-label">WhatsApp</label>
+                <input className="input" name="telefono" placeholder="+54 11 0000-0000" value={form.telefono} onChange={handleField} />
+              </div>
+            </div>
+
+            {/* ✅ Contraseña en su propio formRow */}
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
                 <label className="input-label">Contraseña</label>
                 <input className="input" type="password" name="password" placeholder="Mínimo 6 caracteres" value={form.password} onChange={handleField} />
               </div>
               <div className={styles.formGroup}>
-                <label className="input-label">WhatsApp</label>
-                <input className="input" name="telefono" placeholder="+54 11 0000-0000" value={form.telefono} onChange={handleField} />
+                <label className="input-label">Repetir contraseña</label>
+                <input className="input" type="password" name="passwordConfirm" placeholder="Repetí tu contraseña" value={form.passwordConfirm} onChange={handleField} />
               </div>
             </div>
 
@@ -340,18 +352,16 @@ export default function Registro() {
           ) : (
             <div className={styles.formCard}>
               <h3 className={styles.formTitle}>Resumen del pago</h3>
-
               <div className={styles.paymentSummary}>
                 <div className={styles.paymentRow}>
                   <span>Plan PRO — ElectroAR</span>
-                  <span className={styles.paymentAmount}>$8.900/mes</span>
+                  <span className={styles.paymentAmount}>$15.000/mes</span>
                 </div>
                 <div className={styles.paymentRow}>
                   <span style={{ color: 'var(--muted)', fontSize: '12px' }}>Se renueva automáticamente</span>
-                  <span className={styles.paymentAmountTotal}>$8.900 ARS</span>
+                  <span className={styles.paymentAmountTotal}>$15.000 ARS</span>
                 </div>
               </div>
-
               <div className={styles.mpInfo}>
                 <div className={styles.mpLogo}>MP</div>
                 <div>
@@ -361,19 +371,16 @@ export default function Registro() {
                   </div>
                 </div>
               </div>
-
               <p className={styles.mpDisclaimer}>
                 Al hacer clic serás redirigido a MercadoPago para completar el pago de forma segura.
                 Podés cancelar tu suscripción en cualquier momento.
               </p>
-
               <button className={`btn ${styles.mpBtn}`} onClick={handleSubmit}>
                 <span className={styles.mpBtnLogo}>MP</span>
                 Pagar con MercadoPago
               </button>
             </div>
           )}
-
           <div className={styles.stepActions} style={{ justifyContent: 'flex-start' }}>
             <button className="btn btn-outline" onClick={() => setStep(2)}>← Atrás</button>
           </div>
