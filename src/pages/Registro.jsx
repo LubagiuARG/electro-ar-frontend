@@ -105,6 +105,7 @@ export default function Registro() {
     nombre: '',
     apellido: '',
     email: '',
+    password: '',
     telefono: '',
     matricula: '',
     provincia: '',
@@ -250,6 +251,10 @@ export default function Registro() {
               <div className={styles.formGroup}>
                 <label className="input-label">Email</label>
                 <input className="input" type="email" name="email" placeholder="tu@email.com" value={form.email} onChange={handleField} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className="input-label">Contraseña</label>
+                <input className="input" type="password" name="password" placeholder="Mínimo 6 caracteres" value={form.password} onChange={handleField} />
               </div>
               <div className={styles.formGroup}>
                 <label className="input-label">WhatsApp</label>
