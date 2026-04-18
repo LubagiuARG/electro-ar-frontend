@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import styles from './Registro.module.css'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { registrarElectricista } from '../services/api'
+
+const navigate       = useNavigate()
+const { login }      = useAuth()
 
 const PLANS = [
   {
@@ -128,67 +133,60 @@ export default function Registro() {
     }))
   }
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
   e.preventDefault()
   try {
-    // 1. Registrar el electricista
-    const resultado = await registrarElectricista({
-      nombre:         form.nombre,
-      apellido:       form.apellido,
-      email:          form.email,
-      telefono:       form.telefono,
-      matricula:      form.matricula,
-      provincia:      form.provincia,
-      zona:           form.zona,
-      descripcion:    form.descripcion,
-      especialidades: form.especialidades,
-      plan:           selectedPlan,
-    })
+    const API = import.meta.env.VITE_API_URL
 
-    // 2. Si eligió PRO → redirigir a MercadoPago
+    // 1. Registrar con contraseña
+    const res  = await fetch(`${API}/api/auth/registro`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        nombre:         form.nombre,
+        apellido:       form.apellido,
+        email:          form.email,
+        password:       form.password,
+        telefono:       form.telefono,
+        matricula:      form.matricula,
+        provincia:      form.provincia,
+        zona:           form.zona,
+        descripcion:    form.descripcion,
+        especialidades: form.especialidades,
+        plan:           selectedPlan,
+      }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Error al registrar')
+
+    // 2. Guardar sesión
+    login(data.token, data.electricista)
+
+    // 3. Si eligió PRO → MercadoPago
     if (selectedPlan === 'pro') {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/suscripciones/crear`, {
-        method: 'POST',
+      const mpRes  = await fetch(`${API}/api/suscripciones/crear`, {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          electricistaId: resultado.id,
+        body:    JSON.stringify({
+          electricistaId: data.electricista.id,
           email:          form.email,
           nombre:         `${form.nombre} ${form.apellido}`,
         }),
       })
-      const data = await res.json()
-      if (data.init_point) {
-        window.location.href = data.init_point // Redirigir a MP
+      const mpData = await mpRes.json()
+      if (mpData.init_point) {
+        window.location.href = mpData.init_point
         return
       }
     }
 
-    setSubmitted(true)
-} catch (error) {
-  if (error.message.includes('Ya existe')) {
-    alert('Ya existe un electricista registrado con ese email. Usá otro email.')
-  } else {
-    alert(`Error: ${error.message}`)
+    // 4. Redirigir al panel
+    navigate('/panel')
+
+  } catch (error) {
+    alert(error.message)
   }
 }
-}
- 
-  if (submitted) {
-    return (
-      <div className={styles.successScreen}>
-        <div className={styles.successIcon}>⚡</div>
-        <h2 className={styles.successTitle}>¡Registro completado!</h2>
-        <p className={styles.successDesc}>
-          {selectedPlan === 'free'
-            ? 'Tu perfil ya está activo. Podés completar tu información en cualquier momento.'
-            : 'En instantes serás redirigido a MercadoPago para completar el pago y activar tu Plan PRO.'}
-        </p>
-        <button className="btn btn-primary" onClick={() => setSubmitted(false)}>
-          Volver al inicio
-        </button>
-      </div>
-    )
-  }
 
   return (
     <div className={styles.page}>
