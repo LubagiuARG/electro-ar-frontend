@@ -1,67 +1,79 @@
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import styles from './Header.module.css'
 
-const BoltIcon = () => (
-  <svg width="18" height="22" viewBox="0 0 18 22" fill="none">
-    <path d="M11 1L2 13h7l-2 8 9-13h-7l2-7z" fill="#0a0c0f" strokeLinejoin="round"/>
-  </svg>
-)
-
 export default function Header() {
-  const { profesional, logout } = useAuth()
-  const navigate                = useNavigate()
+  const { profesional: user, logout } = useAuth()
+  const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const handleLogout = () => {
     logout()
-    navigate('/')
+    navigate('/login')
+    setMenuOpen(false)
   }
 
   return (
-    <header className={styles.header}>
-      <div className={styles.logo}>
-        <div className={styles.logoIcon}><BoltIcon /></div>
-        <div>
-          <div className={styles.logoText}>
-            ELECTRO<span className={styles.logoTextWhite}>AR</span>
-          </div>
-          <div className={styles.logoSub}>Presupuestos · Profesionales</div>
+    <header className={`${styles.header} ${scrolled ? styles.scrolled : ''}`}>
+      <div className={styles.inner}>
+        <NavLink to="/" className={styles.logo} onClick={() => setMenuOpen(false)}>
+          tu<span className={styles.logoAccent}>profesional</span>
+        </NavLink>
+
+        <nav className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}>
+          <NavLink to="/profesionales" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink} onClick={() => setMenuOpen(false)}>
+            Profesionales
+          </NavLink>
+          <NavLink to="/presupuesto" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink} onClick={() => setMenuOpen(false)}>
+            Presupuesto IA
+          </NavLink>
+          <NavLink to="/#como-funciona" className={styles.navLink} onClick={() => setMenuOpen(false)}>
+            Cómo funciona
+          </NavLink>
+        </nav>
+
+        <div className={`${styles.actions} ${menuOpen ? styles.actionsOpen : ''}`}>
+          {user ? (
+            <>
+              <NavLink to="/panel" className="btn btn-ghost" onClick={() => setMenuOpen(false)}>
+                Mi panel
+              </NavLink>
+              <button className="btn btn-outline" onClick={handleLogout}>
+                Salir
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/login" className="btn btn-outline" onClick={() => setMenuOpen(false)}>
+                Ingresar
+              </NavLink>
+              <NavLink to="/registro" className="btn btn-primary" onClick={() => setMenuOpen(false)}>
+                Publicar servicio
+              </NavLink>
+            </>
+          )}
         </div>
+
+        <button
+          className={`${styles.burger} ${menuOpen ? styles.burgerOpen : ''}`}
+          onClick={() => setMenuOpen(o => !o)}
+          aria-label="Menú"
+        >
+          <span />
+          <span />
+          <span />
+        </button>
       </div>
 
-      <nav className={styles.nav}>
-        <NavLink to="/" end className={({ isActive }) =>
-          `${styles.navBtn} ${isActive ? styles.active : ''}`}>
-          ⚡ Presupuesto IA
-        </NavLink>
-        <NavLink to="/electricistas" className={({ isActive }) =>
-          `${styles.navBtn} ${isActive ? styles.active : ''}`}>
-          👷 Electricistas
-        </NavLink>
-
-        {profesional ? (
-          <>
-            <NavLink to="/panel" className={({ isActive }) =>
-              `${styles.navBtn} ${isActive ? styles.active : ''}`}>
-              🏠 Mi panel
-            </NavLink>
-            <button className={styles.navBtn} onClick={handleLogout}>
-              Salir
-            </button>
-          </>
-        ) : (
-          <>
-            <NavLink to="/registro" className={({ isActive }) =>
-              `${styles.navBtn} ${isActive ? styles.active : ''}`}>
-              📋 Registrarse
-            </NavLink>
-            <NavLink to="/login" className={({ isActive }) =>
-              `${styles.navBtn} ${isActive ? styles.active : ''}`}>
-              🔐 Ingresar
-            </NavLink>
-          </>
-        )}
-      </nav>
+      {menuOpen && <div className={styles.backdrop} onClick={() => setMenuOpen(false)} />}
     </header>
   )
 }
