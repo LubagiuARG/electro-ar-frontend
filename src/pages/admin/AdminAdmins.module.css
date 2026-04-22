@@ -210,6 +210,67 @@
 .badgeActivo  { background: #ecfdf5; color: #059669; }
 .badgeInactivo{ background: #fff0f0; color: #dc2626; }
 
+/* Modal sub-title */
+
+.modalSub {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 0.15rem;
+}
+
+/* Password feedback */
+
+.pwdError {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.82rem;
+  color: #dc2626;
+}
+
+.pwdSuccess {
+  background: rgba(5,150,105,0.08);
+  border: 1px solid rgba(5,150,105,0.2);
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.82rem;
+  color: #059669;
+}
+
+.inputError {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.1) !important;
+}
+
+.fieldHint {
+  font-size: 0.75rem;
+  color: #dc2626;
+  margin-top: 0.1rem;
+}
+
+/* Row actions */
+
+.rowActions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.btnCambiarPwd {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  background: #f4f4f0;
+  color: #555;
+  transition: background 160ms ease;
+}
+.btnCambiarPwd:hover { background: #e8e8e4; color: #0f0e17; }
+
 /* Action buttons */
 
 .btnSuspender, .btnActivar {

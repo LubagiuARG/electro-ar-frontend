@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useAdmin } from '../../context/AdminContext'
-import { getAdmins, crearAdmin, actualizarAdmin } from '../../services/adminApi'
+import { getAdmins, crearAdmin, actualizarAdmin, cambiarPasswordAdmin } from '../../services/adminApi'
 import AdminLayout from '../../components/admin/AdminLayout'
 import styles from './AdminAdmins.module.css'
 
 const EMPTY_FORM = { nombre: '', email: '', password: '', rol: 'admin' }
+const EMPTY_PWD  = { password: '', confirm: '', error: '', success: '', saving: false }
 
 export default function AdminAdmins() {
   const { admin: me, getToken } = useAdmin()
@@ -13,6 +14,8 @@ export default function AdminAdmins() {
   const [error, setError]       = useState('')
   const [form, setForm]         = useState(null)
   const [saving, setSaving]     = useState(false)
+  const [pwdModal, setPwdModal] = useState(null) // { id, nombre } del admin seleccionado
+  const [pwd, setPwd]           = useState(EMPTY_PWD)
 
   const load = () => {
     setLoading(true)
@@ -48,6 +51,34 @@ export default function AdminAdmins() {
     } catch (err) { alert(err.message) }
   }
 
+  const openPwd = (a) => {
+    setPwdModal({ id: a.id, nombre: a.nombre })
+    setPwd(EMPTY_PWD)
+  }
+
+  const closePwd = () => {
+    setPwdModal(null)
+    setPwd(EMPTY_PWD)
+  }
+
+  const handlePwdSave = async (e) => {
+    e.preventDefault()
+    if (pwd.password.length < 8) {
+      return setPwd(p => ({ ...p, error: 'La contraseña debe tener al menos 8 caracteres.' }))
+    }
+    if (pwd.password !== pwd.confirm) {
+      return setPwd(p => ({ ...p, error: 'Las contraseñas no coinciden.' }))
+    }
+    setPwd(p => ({ ...p, saving: true, error: '', success: '' }))
+    try {
+      await cambiarPasswordAdmin(getToken(), pwdModal.id, { password: pwd.password })
+      setPwd(p => ({ ...p, saving: false, success: 'Contraseña actualizada correctamente.' }))
+      setTimeout(closePwd, 1500)
+    } catch (err) {
+      setPwd(p => ({ ...p, saving: false, error: err.message }))
+    }
+  }
+
   return (
     <AdminLayout>
       <div className={styles.page}>
@@ -59,7 +90,7 @@ export default function AdminAdmins() {
         {error   && <p className={styles.errorMsg}>{error}</p>}
         {loading && <p className={styles.info}>Cargando...</p>}
 
-        {/* Form modal */}
+        {/* Modal: nuevo admin */}
         {form && (
           <div className={styles.modalBackdrop} onClick={e => e.target === e.currentTarget && setForm(null)}>
             <div className={styles.modal}>
@@ -90,6 +121,57 @@ export default function AdminAdmins() {
                 <div className={styles.formActions}>
                   <button type="button" className={styles.btnOutline} onClick={() => setForm(null)}>Cancelar</button>
                   <button type="submit" className={styles.btnPrimary} disabled={saving}>{saving ? 'Creando...' : 'Crear admin'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: cambiar contraseña */}
+        {pwdModal && (
+          <div className={styles.modalBackdrop} onClick={e => e.target === e.currentTarget && closePwd()}>
+            <div className={styles.modal}>
+              <div className={styles.modalHeader}>
+                <div>
+                  <h2 className={styles.modalTitle}>Cambiar contraseña</h2>
+                  <p className={styles.modalSub}>{pwdModal.nombre}</p>
+                </div>
+                <button className={styles.closeBtn} onClick={closePwd}>✕</button>
+              </div>
+              <form className={styles.form} onSubmit={handlePwdSave}>
+                {pwd.error   && <div className={styles.pwdError}>{pwd.error}</div>}
+                {pwd.success && <div className={styles.pwdSuccess}>{pwd.success}</div>}
+                <div className={styles.field}>
+                  <label className={styles.label}>Nueva contraseña</label>
+                  <input
+                    className={styles.input}
+                    type="password"
+                    placeholder="Mínimo 8 caracteres"
+                    value={pwd.password}
+                    onChange={e => setPwd(p => ({ ...p, password: e.target.value, error: '' }))}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Repetir contraseña</label>
+                  <input
+                    className={`${styles.input} ${pwd.confirm && pwd.confirm !== pwd.password ? styles.inputError : ''}`}
+                    type="password"
+                    placeholder="Repetí la contraseña"
+                    value={pwd.confirm}
+                    onChange={e => setPwd(p => ({ ...p, confirm: e.target.value, error: '' }))}
+                    required
+                  />
+                  {pwd.confirm && pwd.confirm !== pwd.password && (
+                    <span className={styles.fieldHint}>Las contraseñas no coinciden</span>
+                  )}
+                </div>
+                <div className={styles.formActions}>
+                  <button type="button" className={styles.btnOutline} onClick={closePwd}>Cancelar</button>
+                  <button type="submit" className={styles.btnPrimary} disabled={pwd.saving}>
+                    {pwd.saving ? 'Guardando...' : 'Guardar'}
+                  </button>
                 </div>
               </form>
             </div>
@@ -127,14 +209,22 @@ export default function AdminAdmins() {
                       </span>
                     </td>
                     <td>
-                      <button
-                        className={a.activo ? styles.btnSuspender : styles.btnActivar}
-                        onClick={() => handleToggle(a)}
-                        disabled={a.id === me?.id}
-                        title={a.id === me?.id ? 'No podés desactivarte a vos mismo' : ''}
-                      >
-                        {a.activo ? 'Desactivar' : 'Activar'}
-                      </button>
+                      <div className={styles.rowActions}>
+                        <button
+                          className={styles.btnCambiarPwd}
+                          onClick={() => openPwd(a)}
+                        >
+                          Cambiar contraseña
+                        </button>
+                        <button
+                          className={a.activo ? styles.btnSuspender : styles.btnActivar}
+                          onClick={() => handleToggle(a)}
+                          disabled={a.id === me?.id}
+                          title={a.id === me?.id ? 'No podés desactivarte a vos mismo' : ''}
+                        >
+                          {a.activo ? 'Desactivar' : 'Activar'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

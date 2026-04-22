@@ -296,6 +296,18 @@
   transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
 }
 
+.catSkeleton {
+  background: #f0f0ee;
+  border-radius: var(--radius-lg);
+  height: 96px;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
 .catCard:hover {
   border-color: var(--accent);
   box-shadow: 0 4px 16px rgba(37,99,235,0.12);

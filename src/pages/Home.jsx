@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './Home.module.css'
 
@@ -10,25 +10,25 @@ const PROVINCES = [
   'Santiago del Estero', 'Tierra del Fuego', 'Tucumán'
 ]
 
-const QUICK_TAGS = ['Electricista', 'Plomero', 'Pintor', 'Gasista', 'Aire acond.', 'Cerrajero']
+const QUICK_TAGS_FALLBACK = ['Electricista', 'Plomero', 'Pintor', 'Gasista', 'Aire acond.', 'Cerrajero']
 
-const CATEGORIES = [
-  { icon: '⚡', label: 'Electricista' },
-  { icon: '🔧', label: 'Plomero' },
-  { icon: '🔥', label: 'Gasista' },
-  { icon: '🧱', label: 'Albañil' },
-  { icon: '🖌️', label: 'Pintor' },
-  { icon: '❄️', label: 'Aire acondicionado' },
-  { icon: '🔑', label: 'Cerrajero' },
-  { icon: '🪵', label: 'Carpintero' },
-  { icon: '🌿', label: 'Jardinero' },
-  { icon: '☀️', label: 'Energía solar' },
-  { icon: '📷', label: 'CCTV' },
-  { icon: '📦', label: 'Mudanzas' },
-  { icon: '🧹', label: 'Limpieza' },
-  { icon: '⚙️', label: 'Herrero' },
-  { icon: '💻', label: 'Técnico PC' },
-  { icon: '🌡️', label: 'Calefacción' },
+const CATEGORIAS_FALLBACK = [
+  { emoji: '⚡', nombre: 'Electricista' },
+  { emoji: '🔧', nombre: 'Plomero' },
+  { emoji: '🔥', nombre: 'Gasista' },
+  { emoji: '🧱', nombre: 'Albañil' },
+  { emoji: '🖌️', nombre: 'Pintor' },
+  { emoji: '❄️', nombre: 'Aire acondicionado' },
+  { emoji: '🔑', nombre: 'Cerrajero' },
+  { emoji: '🪵', nombre: 'Carpintero' },
+  { emoji: '🌿', nombre: 'Jardinero' },
+  { emoji: '☀️', nombre: 'Energía solar' },
+  { emoji: '📷', nombre: 'CCTV' },
+  { emoji: '📦', nombre: 'Mudanzas' },
+  { emoji: '🧹', nombre: 'Limpieza' },
+  { emoji: '⚙️', nombre: 'Herrero' },
+  { emoji: '💻', nombre: 'Técnico PC' },
+  { emoji: '🌡️', nombre: 'Calefacción' },
 ]
 
 const STATS = [
@@ -52,21 +52,35 @@ const STEPS = [
 
 export default function Home() {
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
-  const [province, setProvince] = useState('Todas las provincias')
+  const [search, setSearch]       = useState('')
+  const [province, setProvince]   = useState('Todas las provincias')
+  const [categorias, setCategorias]       = useState([])
+  const [cargandoCats, setCargandoCats]   = useState(true)
+
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL}/api/categorias`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => setCategorias(Array.isArray(data) ? data.filter(c => c.activa !== false) : CATEGORIAS_FALLBACK))
+      .catch(() => setCategorias(CATEGORIAS_FALLBACK))
+      .finally(() => setCargandoCats(false))
+  }, [])
+
+  const quickTags = categorias.length > 0
+    ? categorias.slice(0, 6).map(c => ({ label: `${c.emoji || ''} ${c.nombre}`.trim(), nombre: c.nombre }))
+    : QUICK_TAGS_FALLBACK.map(t => ({ label: t, nombre: t }))
 
   const handleSearch = (e) => {
     e.preventDefault()
     navigate(`/profesionales?q=${encodeURIComponent(search)}&provincia=${encodeURIComponent(province)}`)
   }
 
-  const handleTag = (tag) => {
-    setSearch(tag)
-    navigate(`/profesionales?q=${encodeURIComponent(tag)}&provincia=${encodeURIComponent(province)}`)
+  const handleTag = (nombre) => {
+    setSearch(nombre)
+    navigate(`/profesionales?q=${encodeURIComponent(nombre)}&provincia=${encodeURIComponent(province)}`)
   }
 
-  const handleCategory = (label) => {
-    navigate(`/profesionales?q=${encodeURIComponent(label)}`)
+  const handleCategory = (nombre) => {
+    navigate(`/profesionales?q=${encodeURIComponent(nombre)}`)
   }
 
   return (
@@ -109,9 +123,9 @@ export default function Home() {
             </form>
 
             <div className={styles.quickTags}>
-              {QUICK_TAGS.map(tag => (
-                <button key={tag} className={styles.tag} onClick={() => handleTag(tag)}>
-                  {tag}
+              {quickTags.map(t => (
+                <button key={t.nombre} className={styles.tag} onClick={() => handleTag(t.nombre)}>
+                  {t.label}
                 </button>
               ))}
             </div>
@@ -151,14 +165,25 @@ export default function Home() {
       <section className={styles.categories}>
         <div className="container">
           <h2 className={styles.sectionTitle}>Encontrá el profesional ideal</h2>
-          <p className={styles.sectionSub}>16 categorías · Todo el país</p>
+          <p className={styles.sectionSub}>
+            {cargandoCats ? 'Cargando categorías...' : `${categorias.length} categorías · Todo el país`}
+          </p>
           <div className={styles.catGrid}>
-            {CATEGORIES.map(cat => (
-              <button key={cat.label} className={styles.catCard} onClick={() => handleCategory(cat.label)}>
-                <span className={styles.catIcon}>{cat.icon}</span>
-                <span className={styles.catLabel}>{cat.label}</span>
-              </button>
-            ))}
+            {cargandoCats
+              ? Array.from({ length: 16 }).map((_, i) => (
+                  <div key={i} className={styles.catSkeleton} aria-hidden="true" />
+                ))
+              : categorias.map(cat => (
+                  <button
+                    key={cat.id ?? cat.nombre}
+                    className={styles.catCard}
+                    onClick={() => handleCategory(cat.nombre)}
+                  >
+                    <span className={styles.catIcon}>{cat.emoji}</span>
+                    <span className={styles.catLabel}>{cat.nombre}</span>
+                  </button>
+                ))
+            }
           </div>
         </div>
       </section>
