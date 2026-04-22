@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import SelectorUbicacion from '../components/SelectorUbicacion'
 import styles from './Registro.module.css'
 
 const PLANS = [
@@ -107,7 +108,7 @@ export default function Registro() {
   const [form, setForm]   = useState({
     nombre: '', apellido: '', email: '', password: '',
     passwordConfirm: '', telefono: '', matricula: '',
-    provincia: '', zona: '', especialidades: [], descripcion: '',
+    provincia: '', localidad: '', radioKm: '20', especialidades: [], descripcion: '',
   })
 
   const handleField = (e) => {
@@ -149,7 +150,8 @@ export default function Registro() {
           telefono:       form.telefono,
           matricula:      form.matricula,
           provincia:      form.provincia,
-          zona:           form.zona,
+          localidad:      form.localidad,
+          radioKm:        form.radioKm,
           descripcion:    form.descripcion,
           especialidades: form.especialidades,
           plan:           selectedPlan,
@@ -277,23 +279,15 @@ export default function Registro() {
                 <label className="input-label">N° Matrícula habilitante</label>
                 <input className="input" name="matricula" placeholder="Ej: 4821" value={form.matricula} onChange={handleField} />
               </div>
-              <div className={styles.formGroup}>
-                <label className="input-label">Provincia</label>
-                <select className="input" name="provincia" value={form.provincia} onChange={handleField}>
-                  <option value="">Seleccioná...</option>
-                  <option>Ciudad de Buenos Aires</option>
-                  <option>Buenos Aires</option>
-                  <option>Córdoba</option>
-                  <option>Santa Fe</option>
-                  <option>Mendoza</option>
-                  <option>Otra</option>
-                </select>
-              </div>
             </div>
 
             <div className={styles.formGroup}>
-              <label className="input-label">Zona de cobertura</label>
-              <input className="input" name="zona" placeholder="Ej: Palermo, Belgrano, Villa Urquiza" value={form.zona} onChange={handleField} />
+              <label className="input-label">Ubicación y zona de cobertura</label>
+              <SelectorUbicacion
+                onChange={({ provincia, localidad, radioKm }) =>
+                  setForm(f => ({ ...f, provincia, localidad, radioKm }))
+                }
+              />
             </div>
 
             <div className={styles.formGroup}>

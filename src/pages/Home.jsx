@@ -1,14 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import BuscadorGeo from '../components/BuscadorGeo'
 import styles from './Home.module.css'
 
-const PROVINCES = [
-  'Todas las provincias', 'Buenos Aires', 'CABA', 'Catamarca', 'Chaco',
-  'Chubut', 'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy',
-  'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro',
-  'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe',
-  'Santiago del Estero', 'Tierra del Fuego', 'Tucumán'
-]
 
 const QUICK_TAGS_FALLBACK = ['Electricista', 'Plomero', 'Pintor', 'Gasista', 'Aire acond.', 'Cerrajero']
 
@@ -52,10 +46,8 @@ const STEPS = [
 
 export default function Home() {
   const navigate = useNavigate()
-  const [search, setSearch]       = useState('')
-  const [province, setProvince]   = useState('Todas las provincias')
-  const [categorias, setCategorias]       = useState([])
-  const [cargandoCats, setCargandoCats]   = useState(true)
+  const [categorias, setCategorias]     = useState([])
+  const [cargandoCats, setCargandoCats] = useState(true)
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/categorias`)
@@ -69,14 +61,16 @@ export default function Home() {
     ? categorias.slice(0, 6).map(c => ({ label: `${c.emoji || ''} ${c.nombre}`.trim(), nombre: c.nombre }))
     : QUICK_TAGS_FALLBACK.map(t => ({ label: t, nombre: t }))
 
-  const handleSearch = (e) => {
-    e.preventDefault()
-    navigate(`/profesionales?q=${encodeURIComponent(search)}&provincia=${encodeURIComponent(province)}`)
+  const handleBuscar = ({ oficio, provinciaNombre, localidad }) => {
+    const params = new URLSearchParams()
+    if (oficio)         params.set('q',         oficio)
+    if (provinciaNombre) params.set('provincia', provinciaNombre)
+    if (localidad)      params.set('localidad',  localidad)
+    navigate(`/profesionales?${params.toString()}`)
   }
 
   const handleTag = (nombre) => {
-    setSearch(nombre)
-    navigate(`/profesionales?q=${encodeURIComponent(nombre)}&provincia=${encodeURIComponent(province)}`)
+    navigate(`/profesionales?q=${encodeURIComponent(nombre)}`)
   }
 
   const handleCategory = (nombre) => {
@@ -99,28 +93,7 @@ export default function Home() {
               Conectamos clientes con profesionales verificados de todos los oficios. Rápido, confiable y con presupuesto IA.
             </p>
 
-            <form className={styles.searchBar} onSubmit={handleSearch}>
-              <div className={styles.searchField}>
-                <span className={styles.searchIcon}>🔍</span>
-                <input
-                  className={styles.searchInput}
-                  type="text"
-                  placeholder="¿Qué servicio necesitás?"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
-              </div>
-              <select
-                className={styles.provinceSelect}
-                value={province}
-                onChange={e => setProvince(e.target.value)}
-              >
-                {PROVINCES.map(p => <option key={p}>{p}</option>)}
-              </select>
-              <button type="submit" className={`btn btn-primary ${styles.searchBtn}`}>
-                Buscar
-              </button>
-            </form>
+            <BuscadorGeo onBuscar={handleBuscar} />
 
             <div className={styles.quickTags}>
               {quickTags.map(t => (
