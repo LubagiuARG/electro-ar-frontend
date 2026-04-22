@@ -6,7 +6,7 @@ const WELCOME = {
   content: null,
   ui: {
     type: 'welcome',
-    text: '¡Hola! Soy el asistente de **Don Voltio**. Describime el trabajo eléctrico que necesitás y te calculo un presupuesto orientativo basado en tarifas de FADEERA y COPIME.\n\nEjemplos: *"quiero cambiar el tablero de mi casa de 3 ambientes"* o *"necesito 6 tomas nuevas en un local comercial"*.',
+    text: '¡Hola, soy Profi! Describime el trabajo que querés realizar y te calculo un presupuesto orientativo basado en las tarifas actualizadas de Argentina.\n\nEjemplos: *"quiero cambiar el tablero de mi casa de 3 ambientes"* o *"necesito 6 tomas nuevas en un local comercial"*.',
   },
 }
 
