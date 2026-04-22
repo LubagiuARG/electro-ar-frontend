@@ -10,26 +10,56 @@ const RADIOS = [
   { value: 'prov', label: 'Toda la provincia' },
 ]
 
-export default function SelectorUbicacion({ onChange }) {
-  const [provincias, setProvincias]         = useState([])
-  const [provinciaId, setProvinciaId]       = useState('')
+export default function SelectorUbicacion({
+  onChange,
+  initialProvincia = '',
+  initialLocalidad = '',
+  initialRadio     = '20',
+}) {
+  const [provincias, setProvincias]           = useState([])
+  const [provinciaId, setProvinciaId]         = useState('')
   const [provinciaNombre, setProvinciaNombre] = useState('')
-  const [localidad, setLocalidad]           = useState('')
-  const [localidadId, setLocalidadId]       = useState('')
-  const [radioKm, setRadioKm]               = useState('20')
-  const [sugerencias, setSugerencias]       = useState([])
-  const [buscandoLoc, setBuscandoLoc]       = useState(false)
-  const [cargandoProv, setCargandoProv]     = useState(true)
-  const [dropdownOpen, setDropdownOpen]     = useState(false)
+  const [localidad, setLocalidad]             = useState(initialLocalidad)
+  const [localidadId, setLocalidadId]         = useState('')
+  const [radioKm, setRadioKm]                 = useState(String(initialRadio))
+  const [sugerencias, setSugerencias]         = useState([])
+  const [buscandoLoc, setBuscandoLoc]         = useState(false)
+  const [cargandoProv, setCargandoProv]       = useState(true)
+  const [dropdownOpen, setDropdownOpen]       = useState(false)
+
+  // Evita disparar onChange durante la inicialización
+  const skipNotify = useRef(true)
   const debounceRef = useRef(null)
   const wrapperRef  = useRef(null)
 
+  // Cargar provincias y preseleccionar si hay initialProvincia
   useEffect(() => {
     getProvincias()
-      .then(setProvincias)
+      .then(async (prov) => {
+        setProvincias(prov)
+
+        if (initialProvincia) {
+          const match = prov.find(
+            p => p.nombre.toLowerCase() === initialProvincia.toLowerCase()
+          )
+          if (match) {
+            setProvinciaId(match.id)
+            setProvinciaNombre(match.nombre)
+            // Cargar localidades de esa provincia en background
+            try {
+              const locs = await getLocalidades(match.id)
+              setSugerencias(locs)
+            } catch { /* silent */ }
+          }
+        }
+      })
       .catch(() => setProvincias([]))
-      .finally(() => setCargandoProv(false))
-  }, [])
+      .finally(() => {
+        setCargandoProv(false)
+        // A partir de aquí ya notificamos cambios al padre
+        setTimeout(() => { skipNotify.current = false }, 0)
+      })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -42,15 +72,10 @@ export default function SelectorUbicacion({ onChange }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  // Notificar al padre cada vez que cambia algún valor
+  // Notificar al padre solo tras la inicialización
   useEffect(() => {
-    onChange?.({
-      provincia:      provinciaNombre,
-      provinciaId,
-      localidad,
-      localidadId,
-      radioKm,
-    })
+    if (skipNotify.current) return
+    onChange?.({ provincia: provinciaNombre, provinciaId, localidad, localidadId, radioKm })
   }, [provinciaNombre, provinciaId, localidad, localidadId, radioKm])
 
   const handleProvinciaChange = async (e) => {
@@ -106,7 +131,6 @@ export default function SelectorUbicacion({ onChange }) {
   }
 
   const radioLabel = RADIOS.find(r => r.value === radioKm)?.label || ''
-
   const resumen = provinciaNombre
     ? `📍 ${provinciaNombre}${localidad ? ` › ${localidad}` : ''} · ${radioLabel}`
     : null

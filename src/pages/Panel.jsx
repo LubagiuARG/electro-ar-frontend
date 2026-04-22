@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate }         from 'react-router-dom'
 import { useAuth }             from '../context/AuthContext'
+import SelectorUbicacion       from '../components/SelectorUbicacion'
 import styles                  from './Panel.module.css'
 
 const API = import.meta.env.VITE_API_URL
@@ -290,7 +291,9 @@ function TabPerfil({ profesional, getToken }) {
         telefono:    profesional.telefono    || '',
         matricula:   profesional.matricula   || '',
         provincia:   profesional.provincia   || '',
-        zona:        profesional.zona        || '',
+        localidad:   profesional.localidad   || '',
+        localidadId: profesional.localidadId || '',
+        radioKm:     String(profesional.radioKm ?? '20'),
         descripcion: profesional.descripcion || '',
       })
     }
@@ -344,24 +347,18 @@ function TabPerfil({ profesional, getToken }) {
             <input className="input" value={form.matricula || ''}
               onChange={e => setForm(f => ({ ...f, matricula: e.target.value }))} />
           </div>
-          <div className={styles.formGroup}>
-            <label className="input-label">Provincia</label>
-            <select className="input" value={form.provincia || ''}
-              onChange={e => setForm(f => ({ ...f, provincia: e.target.value }))}>
-              <option value="">Seleccioná...</option>
-              <option>Ciudad de Buenos Aires</option>
-              <option>Buenos Aires</option>
-              <option>Córdoba</option>
-              <option>Santa Fe</option>
-              <option>Mendoza</option>
-              <option>Otra</option>
-            </select>
-          </div>
-          <div className={styles.formGroup}>
-            <label className="input-label">Zona de cobertura</label>
-            <input className="input" value={form.zona || ''}
-              onChange={e => setForm(f => ({ ...f, zona: e.target.value }))} />
-          </div>
+        </div>
+
+        <div className={styles.formGroup} style={{ marginTop: '.75rem' }}>
+          <label className="input-label">Ubicación y zona de cobertura</label>
+          <SelectorUbicacion
+            initialProvincia={form.provincia}
+            initialLocalidad={form.localidad}
+            initialRadio={form.radioKm}
+            onChange={({ provincia, localidad, localidadId, radioKm }) =>
+              setForm(f => ({ ...f, provincia, localidad, localidadId, radioKm }))
+            }
+          />
         </div>
 
         <div className={styles.formGroup} style={{ marginTop: '.75rem' }}>
